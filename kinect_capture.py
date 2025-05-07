@@ -1,9 +1,14 @@
+import os
 import sys
 import time
 import argparse
+import cv2
 from pyk4a import PyK4A, Config, ColorResolution, DepthMode
 
-def capture(device_index=0, output_folder="output", duration=10, fps=30):
+def capture(device_index, output_folder="output", duration=10, fps=30, max_frames=None):
+    # 确保输出目录存在
+    os.makedirs(output_folder, exist_ok=True)
+    
     k4a = PyK4A(
         Config(
             color_resolution=ColorResolution.RES_1080P,
@@ -15,18 +20,38 @@ def capture(device_index=0, output_folder="output", duration=10, fps=30):
     k4a.start()
     start_time = time.time()
     frame_idx = 0
-    while time.time() - start_time < duration:
+    frame_interval = 1.0 / fps  # 计算帧间隔时间
+    
+    while True:
+        # 检查是否达到最大帧数
+        if max_frames is not None and frame_idx >= max_frames:
+            break
+            
+        # 检查是否达到最大时长
+        if time.time() - start_time >= duration:
+            break
+            
+        # 计算下一帧的理想时间
+        next_frame_time = start_time + frame_idx * frame_interval
+        
+        # 等待到达下一帧的时间
+        current_time = time.time()
+        if current_time < next_frame_time:
+            time.sleep(next_frame_time - current_time)
+            
+        # 获取并保存帧
         capture = k4a.get_capture()
         if capture.color is not None:
-            # 保存彩色图像
             filename = f"{output_folder}/color_{frame_idx:06d}.jpg"
             cv2.imwrite(filename, capture.color)
         if capture.depth is not None:
-            # 保存深度图像
             filename = f"{output_folder}/depth_{frame_idx:06d}.png"
             cv2.imwrite(filename, capture.depth)
+            
         frame_idx += 1
+        
     k4a.stop()
+    print(f"设备 {device_index} 已采集 {frame_idx} 帧图像")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -34,5 +59,6 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, default='output', help='Output folder')
     parser.add_argument('--duration', type=int, default=10, help='Capture duration (seconds)')
     parser.add_argument('--fps', type=int, default=30, help='Frames per second')
+    parser.add_argument('--max_frames', type=int, default=None, help='Maximum number of frames to capture')
     args = parser.parse_args()
-    capture(device_index=args.index, output_folder=args.output, duration=args.duration, fps=args.fps)
+    capture(device_index=args.index, output_folder=args.output, duration=args.duration, fps=args.fps, max_frames=args.max_frames)
