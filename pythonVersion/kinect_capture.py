@@ -52,13 +52,3 @@ def capture(device_index, output_folder="output", duration=10, fps=30, max_frame
         
     k4a.stop()
     print(f"设备 {device_index} 已采集 {frame_idx} 帧图像")
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--index', type=int, default=0, help='Kinect device index')
-    parser.add_argument('--output', type=str, default='output', help='Output folder')
-    parser.add_argument('--duration', type=int, default=10, help='Capture duration (seconds)')
-    parser.add_argument('--fps', type=int, default=30, help='Frames per second')
-    parser.add_argument('--max_frames', type=int, default=None, help='Maximum number of frames to capture')
-    args = parser.parse_args()
-    capture(device_index=args.index, output_folder=args.output, duration=args.duration, fps=args.fps, max_frames=args.max_frames)
